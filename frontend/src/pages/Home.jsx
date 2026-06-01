@@ -1,79 +1,132 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, ArrowDown } from "lucide-react";
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import useReveal from "../hooks/useReveal";
-import { studio, heroLines, projects, services, philosophy, stats, clients, process } from "../mock";
+import { projects, services, philosophy, stats, clients, process } from "../mock";
+
+const EASE = [0.16, 1, 0.3, 1];
 
 function Hero() {
-  const [time, setTime] = useState("");
-  useEffect(() => {
-    const fmt = () =>
-      new Date().toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Asia/Kolkata",
-      });
-    setTime(fmt());
-    const t = setInterval(() => setTime(fmt()), 30000);
-    return () => clearInterval(t);
-  }, []);
+  const ref = useRef(null);
+  const glowX = useMotionValue(50);
+  const glowY = useMotionValue(40);
+  const sx = useSpring(glowX, { stiffness: 60, damping: 20 });
+  const sy = useSpring(glowY, { stiffness: 60, damping: 20 });
+
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+  const yText = useTransform(scrollYProgress, [0, 1], [0, -120]);
+  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  const onMove = (e) => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    glowX.set(((e.clientX - r.left) / r.width) * 100);
+    glowY.set(((e.clientY - r.top) / r.height) * 100);
+  };
+
+  const line1 = ["You", "tell", "the", "story,"];
+  const line2 = ["we", "make", "it"];
+
+  const wordVariants = {
+    hidden: { y: "120%", opacity: 0, filter: "blur(12px)" },
+    show: (i) => ({
+      y: "0%",
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: { duration: 1.1, delay: 0.25 + i * 0.08, ease: EASE },
+    }),
+  };
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-end overflow-hidden bg-[#0a0a0b] sm-grain">
-      <div className="absolute -top-40 -right-40 w-[55vw] h-[55vw] rounded-full bg-[var(--sm-purple-deep)]/20 blur-[120px]" />
-      <div className="absolute -bottom-40 -left-40 w-[40vw] h-[40vw] rounded-full bg-[var(--sm-purple)]/10 blur-[120px]" />
+    <section
+      ref={ref}
+      onMouseMove={onMove}
+      className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#0a0a0b] sm-grain"
+    >
+      {/* Rotating aurora */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140vw] h-[140vw] sm-aurora opacity-70" />
+      {/* Mouse-reactive glow */}
+      <motion.div
+        className="pointer-events-none absolute w-[44vw] h-[44vw] rounded-full bg-[var(--sm-purple)]/25 blur-[130px]"
+        style={{ left: useTransform(sx, (v) => `${v}%`), top: useTransform(sy, (v) => `${v}%`), x: "-50%", y: "-50%" }}
+      />
 
-      <div className="relative mx-auto w-full max-w-[1500px] px-5 sm:px-8 pb-10 pt-36">
-        <p className="overflow-hidden mb-6">
-          <span className="sm-rise inline-block text-[11px] sm:text-sm tracking-[0.35em] uppercase text-[var(--sm-purple-soft)]">
-            A Marketing Studio · Working Globally
-          </span>
-        </p>
+      <motion.div
+        style={{ y: yText, opacity }}
+        className="relative mx-auto w-full max-w-[1500px] px-5 sm:px-8 pt-28"
+      >
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 0.1, ease: EASE }}
+          className="text-[11px] sm:text-xs tracking-[0.4em] uppercase text-[var(--sm-purple-soft)] mb-8 sm:mb-10"
+        >
+          The Studio M — Storytellers
+        </motion.p>
 
-        <h1 className="font-display font-extrabold text-white leading-[0.86] tracking-tight">
-          {heroLines.map((line, i) => (
-            <span key={i} className="block overflow-hidden">
-              <span
-                className="sm-rise inline-block text-[14vw] sm:text-[12vw] lg:text-[10.5vw]"
-                style={{ animationDelay: `${0.15 + i * 0.12}s` }}
-              >
-                {line === "& hospitality." ? (
-                  <>
-                    <span className="text-[var(--sm-purple-soft)]">&</span> hospitality.
-                  </>
-                ) : (
-                  line
-                )}
+        <h1 className="font-display text-white font-semibold leading-[0.92] tracking-tight text-[12vw] sm:text-[9vw] lg:text-[7.2vw]">
+          <span className="block">
+            {line1.map((w, i) => (
+              <span key={i} className="inline-block overflow-hidden align-bottom mr-[0.22em]">
+                <motion.span custom={i} variants={wordVariants} initial="hidden" animate="show" className="inline-block">
+                  {w}
+                </motion.span>
               </span>
+            ))}
+          </span>
+          <span className="block">
+            {line2.map((w, i) => (
+              <span key={i} className="inline-block overflow-hidden align-bottom mr-[0.22em]">
+                <motion.span custom={i + 4} variants={wordVariants} initial="hidden" animate="show" className="inline-block">
+                  {w}
+                </motion.span>
+              </span>
+            ))}
+            <span className="inline-block overflow-hidden align-bottom">
+              <motion.span
+                custom={7}
+                variants={wordVariants}
+                initial="hidden"
+                animate="show"
+                className="inline-block font-italic-serif text-[var(--sm-purple-soft)]"
+              >
+                unforgettable.
+              </motion.span>
             </span>
-          ))}
+          </span>
         </h1>
 
-        <div className="mt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-          <p className="max-w-md text-white/60 text-base sm:text-lg leading-relaxed">
-            Ideas can come from anywhere. We turn them into brands the world
-            remembers — for luxury, lifestyle and hospitality.
+        <motion.div
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 1.1, ease: EASE }}
+          className="mt-10 sm:mt-14 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10"
+        >
+          <Link
+            to="/work"
+            className="group inline-flex items-center gap-3 rounded-full bg-white text-[#0a0a0b] px-7 py-4 hover:bg-[var(--sm-purple)] hover:text-white transition-colors duration-300 self-start"
+          >
+            <span className="text-xs tracking-[0.2em] uppercase font-medium">See our stories</span>
+            <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+          </Link>
+          <p className="text-white/45 text-sm tracking-wide max-w-xs">
+            Brand storytelling for luxury &amp; hospitality.
           </p>
-          <div className="flex items-center gap-8">
-            <div className="hidden sm:block text-right">
-              <p className="text-[10px] tracking-[0.3em] uppercase text-white/40">New Delhi</p>
-              <p className="font-display text-white text-lg font-semibold tabular-nums">{time} IST</p>
-            </div>
-            <Link
-              to="/work"
-              className="group inline-flex items-center gap-3 rounded-full border border-white/20 px-6 py-4 hover:bg-white hover:text-[#0a0a0b] transition-colors duration-300"
-            >
-              <span className="text-xs tracking-[0.2em] uppercase">View work</span>
-              <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-            </Link>
-          </div>
-        </div>
+        </motion.div>
+      </motion.div>
 
-        <div className="mt-12 flex items-center gap-3 text-white/40">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1, delay: 1.4 }}
+        className="absolute bottom-8 left-0 right-0"
+      >
+        <div className="mx-auto w-full max-w-[1500px] px-5 sm:px-8 flex items-center gap-3 text-white/40">
           <ArrowDown size={16} className="animate-bounce" />
-          <span className="text-[10px] tracking-[0.3em] uppercase">Scroll to view more</span>
+          <span className="text-[10px] tracking-[0.3em] uppercase">Scroll</span>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
