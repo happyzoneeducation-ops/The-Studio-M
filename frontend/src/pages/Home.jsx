@@ -11,12 +11,13 @@ function Hero() {
   const ref = useRef(null);
   const glowX = useMotionValue(50);
   const glowY = useMotionValue(40);
-  const sx = useSpring(glowX, { stiffness: 60, damping: 20 });
-  const sy = useSpring(glowY, { stiffness: 60, damping: 20 });
+  const sx = useSpring(glowX, { stiffness: 50, damping: 18 });
+  const sy = useSpring(glowY, { stiffness: 50, damping: 18 });
 
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const yText = useTransform(scrollYProgress, [0, 1], [0, -120]);
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const yText = useTransform(scrollYProgress, [0, 1], [0, -90]);
+  const opacity = useTransform(scrollYProgress, [0, 0.75], [1, 0]);
+  const scaleBg = useTransform(scrollYProgress, [0, 1], [1, 1.12]);
 
   const onMove = (e) => {
     const r = ref.current?.getBoundingClientRect();
@@ -25,49 +26,57 @@ function Hero() {
     glowY.set(((e.clientY - r.top) / r.height) * 100);
   };
 
-  const line1 = ["You", "tell", "the", "story,"];
-  const line2 = ["we", "make", "it"];
-
+  const words = ["You", "tell", "the", "story,", "we", "make", "it"];
   const wordVariants = {
     hidden: { y: "120%", opacity: 0, filter: "blur(12px)" },
     show: (i) => ({
       y: "0%",
       opacity: 1,
       filter: "blur(0px)",
-      transition: { duration: 1.1, delay: 0.25 + i * 0.08, ease: EASE },
+      transition: { duration: 1.1, delay: 0.35 + i * 0.07, ease: EASE },
     }),
   };
 
   return (
-    <section
-      ref={ref}
-      onMouseMove={onMove}
-      className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-[#0a0a0b] sm-grain"
-    >
-      {/* Rotating aurora */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[140vw] h-[140vw] sm-aurora opacity-70" />
-      {/* Mouse-reactive glow */}
+    <section ref={ref} onMouseMove={onMove} className="relative min-h-screen overflow-hidden bg-[#07060c]">
+      {/* Animated liquid background */}
+      <motion.div style={{ scale: scaleBg }} className="absolute inset-0">
+        <div className="sm-liquid">
+          <div className="sm-blob sm-blob-a" />
+          <div className="sm-blob sm-blob-b" />
+          <div className="sm-blob sm-blob-c" />
+          <div className="sm-blob sm-blob-d" />
+        </div>
+        <div className="sm-vignette" />
+        <div className="absolute inset-0 sm-grain opacity-60" />
+      </motion.div>
+
+      {/* Mouse-reactive sheen */}
       <motion.div
-        className="pointer-events-none absolute w-[44vw] h-[44vw] rounded-full bg-[var(--sm-purple)]/25 blur-[130px]"
+        className="pointer-events-none absolute w-[36vw] h-[36vw] rounded-full bg-white/10 blur-[120px] mix-blend-screen"
         style={{ left: useTransform(sx, (v) => `${v}%`), top: useTransform(sy, (v) => `${v}%`), x: "-50%", y: "-50%" }}
       />
 
+      {/* Centered hero content */}
       <motion.div
         style={{ y: yText, opacity }}
-        className="relative mx-auto w-full max-w-[1500px] px-5 sm:px-8 pt-28"
+        className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-5"
       >
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 0.1, ease: EASE }}
-          className="text-[11px] sm:text-xs tracking-[0.4em] uppercase text-[var(--sm-purple-soft)] mb-8 sm:mb-10"
+          transition={{ duration: 0.9, delay: 0.15, ease: EASE }}
+          className="inline-flex items-center gap-2 rounded-full sm-glass-soft px-4 py-2 mb-8"
         >
-          The Studio M — Storytellers
-        </motion.p>
+          <span className="h-1.5 w-1.5 rounded-full bg-[var(--sm-purple-soft)] animate-pulse" />
+          <span className="text-[10px] sm:text-[11px] tracking-[0.35em] uppercase text-white/80">
+            Storytellers · Luxury &amp; Hospitality
+          </span>
+        </motion.div>
 
-        <h1 className="font-display text-white font-semibold leading-[0.92] tracking-tight text-[12vw] sm:text-[9vw] lg:text-[7.2vw]">
+        <h1 className="font-display text-white font-medium leading-[0.95] tracking-tight text-[12.5vw] sm:text-[9vw] lg:text-[6.8vw] max-w-[16ch]">
           <span className="block">
-            {line1.map((w, i) => (
+            {words.slice(0, 4).map((w, i) => (
               <span key={i} className="inline-block overflow-hidden align-bottom mr-[0.22em]">
                 <motion.span custom={i} variants={wordVariants} initial="hidden" animate="show" className="inline-block">
                   {w}
@@ -76,7 +85,7 @@ function Hero() {
             ))}
           </span>
           <span className="block">
-            {line2.map((w, i) => (
+            {words.slice(4).map((w, i) => (
               <span key={i} className="inline-block overflow-hidden align-bottom mr-[0.22em]">
                 <motion.span custom={i + 4} variants={wordVariants} initial="hidden" animate="show" className="inline-block">
                   {w}
@@ -84,13 +93,7 @@ function Hero() {
               </span>
             ))}
             <span className="inline-block overflow-hidden align-bottom">
-              <motion.span
-                custom={7}
-                variants={wordVariants}
-                initial="hidden"
-                animate="show"
-                className="inline-block font-italic-serif text-[var(--sm-purple-soft)]"
-              >
+              <motion.span custom={7} variants={wordVariants} initial="hidden" animate="show" className="inline-block font-italic-serif text-[var(--sm-purple-soft)]">
                 unforgettable.
               </motion.span>
             </span>
@@ -100,31 +103,34 @@ function Hero() {
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.9, delay: 1.1, ease: EASE }}
-          className="mt-10 sm:mt-14 flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-10"
+          transition={{ duration: 0.9, delay: 1.2, ease: EASE }}
+          className="mt-10 sm:mt-12 flex flex-col sm:flex-row items-center gap-4"
         >
           <Link
             to="/work"
-            className="group inline-flex items-center gap-3 rounded-full bg-white text-[#0a0a0b] px-7 py-4 hover:bg-[var(--sm-purple)] hover:text-white transition-colors duration-300 self-start"
+            className="group inline-flex items-center gap-3 rounded-full bg-white text-[#0a0a0b] px-7 py-4 hover:bg-[var(--sm-purple)] hover:text-white transition-colors duration-300"
           >
             <span className="text-xs tracking-[0.2em] uppercase font-medium">See our stories</span>
             <ArrowUpRight size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
           </Link>
-          <p className="text-white/45 text-sm tracking-wide max-w-xs">
-            Brand storytelling for luxury &amp; hospitality.
-          </p>
+          <Link
+            to="/contact"
+            className="group inline-flex items-center gap-3 rounded-full sm-glass-soft text-white px-7 py-4 hover:bg-white/10 transition-colors duration-300"
+          >
+            <span className="text-xs tracking-[0.2em] uppercase font-medium">Book a call</span>
+          </Link>
         </motion.div>
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1, delay: 1.4 }}
-        className="absolute bottom-8 left-0 right-0"
+        transition={{ duration: 1, delay: 1.5 }}
+        className="absolute bottom-8 left-0 right-0 z-10 flex justify-center"
       >
-        <div className="mx-auto w-full max-w-[1500px] px-5 sm:px-8 flex items-center gap-3 text-white/40">
-          <ArrowDown size={16} className="animate-bounce" />
-          <span className="text-[10px] tracking-[0.3em] uppercase">Scroll</span>
+        <div className="flex items-center gap-3 text-white/50">
+          <ArrowDown size={15} className="animate-bounce" />
+          <span className="text-[10px] tracking-[0.3em] uppercase">Scroll to explore</span>
         </div>
       </motion.div>
     </section>
