@@ -163,30 +163,89 @@ backend:
         -comment: "✅ PASS - Returns 200 with array of enquiries. Created enquiry found in list. All enquiries have created_at field. Sorting by created_at (newest first) verified."
 
 frontend:
-  - task: "Frontend integration with projects + enquiries API"
+  - task: "Home page - Hero, Navbar, Selected Work section"
     implemented: true
-    working: "NA"
-    file: "frontend/src/api.js"
+    working: true
+    file: "frontend/src/pages/Home.jsx"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
     status_history:
         -working: "NA"
         -agent: "main"
-        -comment: "Home/Work/CaseStudyDetail fetch projects; Contact posts enquiry. Not yet UI-tested (awaiting user permission)."
+        -comment: "Hero with animated tagline, glassmorphism navbar, Selected Work section fetching from API."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - Hero section renders with tagline 'You tell the story, we make it unforgettable.' (text split into animated spans). Floating glass navbar present with all links: Home, Work, Studio, Contact, and purple 'Book a call' button. Selected Work section displays 5 project cards loaded from GET /api/projects. Project 'Orchard at Sarai' confirmed. All sections render: Services, Philosophy (THINK, FEEL, LOOK, TALK), Stats (12+, 80+, 4.8M, 11x), Process."
+  
+  - task: "Work page - Project grid with filter pills"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Work.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Work page with filter pills and project grid."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - Work page displays 'The Work' heading and description. All 5 filter pills present: All, Social Media Management, Paid Marketing, Website Development, Brand & Growth Marketing. Initial load shows 8 projects. Filter functionality working: clicking 'Paid Marketing' reduces to 4 projects, clicking 'All' resets to 8 projects. Projects load from GET /api/projects and filter by services array."
+  
+  - task: "Case Study Detail page - Project details with Next project link"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/CaseStudyDetail.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Case study detail page with project info, gallery, and next project navigation."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - Case study detail page (/work/orchard-at-sarai) displays correctly. Project title 'Orchard at Sarai' shown in h1. Summary paragraph present. Cover image displays. Services section lists 3 services. 'The work' section with scope text present. Results section shows 3 metrics (e.g., '+186%'). Image gallery renders. 'Next project' link at bottom navigates successfully to next case study (Ravissant India). All content loaded from GET /api/projects."
+  
+  - task: "Contact form - Validation and submission"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/Contact.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Contact form with validation and POST to /api/enquiries."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - Contact page displays 'Let's talk.' heading. Form validation working: submitting empty form shows error toast 'Please fill in your name, email and a short message.' Valid form submission tested with Name='Sarah Mitchell', Email='sarah.mitchell@luxuryhotel.com', Company='The Grand Luxury Hotel', Service='Social Media Management', Message='We are launching a new luxury hotel in Dubai...'. Success toast displays: 'Thank you — we'll be in touch within 24 hours.' Form fields clear after successful submission. POST /api/enquiries working correctly."
+  
+  - task: "Mobile menu - Hamburger overlay navigation"
+    implemented: true
+    working: true
+    file: "frontend/src/components/Navbar.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Mobile hamburger menu with overlay."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - Mobile viewport (390x844) tested. Hamburger menu button (aria-label='Open menu') found and clickable. Overlay menu opens with dark background and blur. All 8 nav links present in mobile menu (Home, Work, Studio, Contact). Close button works correctly. Menu closes and restores scroll."
 
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
-  run_ui: false
+  test_sequence: 2
+  run_ui: true
 
 test_plan:
-  current_focus:
-    - "GET /api/projects (list, sorted by order)"
-    - "GET /api/projects/{id} (single + 404)"
-    - "POST /api/enquiries (create + validation)"
-    - "GET /api/enquiries (list newest first)"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -196,3 +255,5 @@ agent_communication:
     -message: "Backend implemented for projects (seeded, 8 items) and enquiries. Please test all 4 endpoints incl. validation (400 blank name/message, 422 invalid email, 404 unknown project). Use REACT_APP_BACKEND_URL/api base."
     -agent: "testing"
     -message: "✅ Backend testing complete - ALL TESTS PASSED (4/4). Created comprehensive backend_test.py with 24 individual test assertions. All endpoints working correctly: GET /api/projects (8 projects, sorted by order, first id 'orchard-at-sarai'), GET /api/projects/{id} (200 for valid, 404 for invalid), POST /api/enquiries (all validation scenarios working: 200 valid, 422 invalid email, 400 blank name/message, 422 missing field), GET /api/enquiries (returns array with created enquiry). Backend logs clean, no errors. All tasks marked as working: true."
+    -agent: "testing"
+    -message: "✅ FRONTEND E2E TESTING COMPLETE - ALL 5 FLOWS PASSED. Tested comprehensive user journeys: (1) Home page: Hero tagline 'You tell the story, we make it unforgettable.' renders with animations, glassmorphism navbar with all links present, Selected Work section displays 5 projects from API including 'Orchard at Sarai', all sections render (Services, Philosophy THINK/FEEL/LOOK/TALK, Stats with 4 values, Process). (2) Work page: 'The Work' heading, 5 filter pills (All, Social Media Management, Paid Marketing, Website Development, Brand & Growth Marketing), 8 projects load, filter reduces to 4 projects for 'Paid Marketing', reset to 8 with 'All'. (3) Case Study Detail: /work/orchard-at-sarai shows title, summary, cover image, 3 services, scope, 3 result metrics (+186%), gallery, Next project link navigates to Ravissant India. (4) Contact form: Empty form validation shows error toast, valid submission (Sarah Mitchell, sarah.mitchell@luxuryhotel.com, The Grand Luxury Hotel, Social Media Management, detailed message) shows success toast 'Thank you — we'll be in touch within 24 hours.', form clears. (5) Mobile menu: Hamburger opens overlay with 8 nav links, close button works. No console errors, no network failures. Projects loading from backend (not mocked). Contact form POST /api/enquiries succeeds. All frontend tasks marked working: true."
