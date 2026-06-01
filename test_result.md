@@ -101,3 +101,98 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "THE STUDIO M — premium marketing agency site (clone of 4design.co.in aesthetic). Backend phase: dynamic projects (case studies) + contact form (enquiries) on FastAPI + MongoDB."
+
+backend:
+  - task: "GET /api/projects (list, sorted by order)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Returns seeded projects sorted by order. 8 projects seeded on startup from seed_data.py."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - All tests passed. Returns 200 with array of 8 projects sorted by order (1-8). First project id is 'orchard-at-sarai'. All required fields present: id, title, category, year, cover, size, summary, services (list), scope, results (list of {label,value}), gallery (list), order. Field types validated correctly."
+  - task: "GET /api/projects/{id} (single + 404)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Returns single project by slug id (e.g. orchard-at-sarai); 404 for unknown id."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - All tests passed. GET /api/projects/orchard-at-sarai returns 200 with single project object (not array). GET /api/projects/does-not-exist returns 404 with detail 'Project not found'. Both scenarios working correctly."
+  - task: "POST /api/enquiries (create + validation)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Creates enquiry with name/email/company/service/message. EmailStr validation; 400 if name/message blank; 422 on invalid email."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - All validation tests passed. Valid payload returns 200 with id, created_at, and echoed fields. Invalid email returns 422 (Pydantic EmailStr validation). Blank name returns 400 with detail 'Name and message are required'. Missing message field returns 422 (Pydantic validation). All error handling working correctly."
+  - task: "GET /api/enquiries (list newest first)"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Lists enquiries sorted by created_at desc."
+        -working: true
+        -agent: "testing"
+        -comment: "✅ PASS - Returns 200 with array of enquiries. Created enquiry found in list. All enquiries have created_at field. Sorting by created_at (newest first) verified."
+
+frontend:
+  - task: "Frontend integration with projects + enquiries API"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/api.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        -working: "NA"
+        -agent: "main"
+        -comment: "Home/Work/CaseStudyDetail fetch projects; Contact posts enquiry. Not yet UI-tested (awaiting user permission)."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "GET /api/projects (list, sorted by order)"
+    - "GET /api/projects/{id} (single + 404)"
+    - "POST /api/enquiries (create + validation)"
+    - "GET /api/enquiries (list newest first)"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    -agent: "main"
+    -message: "Backend implemented for projects (seeded, 8 items) and enquiries. Please test all 4 endpoints incl. validation (400 blank name/message, 422 invalid email, 404 unknown project). Use REACT_APP_BACKEND_URL/api base."
+    -agent: "testing"
+    -message: "✅ Backend testing complete - ALL TESTS PASSED (4/4). Created comprehensive backend_test.py with 24 individual test assertions. All endpoints working correctly: GET /api/projects (8 projects, sorted by order, first id 'orchard-at-sarai'), GET /api/projects/{id} (200 for valid, 404 for invalid), POST /api/enquiries (all validation scenarios working: 200 valid, 422 invalid email, 400 blank name/message, 422 missing field), GET /api/enquiries (returns array with created enquiry). Backend logs clean, no errors. All tasks marked as working: true."

@@ -1,14 +1,36 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
 import useReveal from "../hooks/useReveal";
-import { projects } from "../mock";
+import { getProjects } from "../api";
 
 export default function CaseStudyDetail() {
   const { id } = useParams();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useReveal([id, projects]);
+
+  useEffect(() => {
+    let on = true;
+    getProjects()
+      .then((d) => on && setProjects(d))
+      .catch(() => on && setProjects([]))
+      .finally(() => on && setLoading(false));
+    return () => {
+      on = false;
+    };
+  }, []);
+
   const idx = projects.findIndex((p) => p.id === id);
   const project = projects[idx];
-  useReveal([id]);
+
+  if (loading) {
+    return (
+      <main className="bg-[#0a0a0b] min-h-screen flex items-center justify-center">
+        <span className="text-white/40 text-sm tracking-[0.3em] uppercase animate-pulse">Loading…</span>
+      </main>
+    );
+  }
 
   if (!project) {
     return (

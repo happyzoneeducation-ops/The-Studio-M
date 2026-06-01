@@ -1,9 +1,10 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, ArrowDown } from "lucide-react";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import useReveal from "../hooks/useReveal";
-import { projects, services, philosophy, stats, clients, process } from "../mock";
+import { services, philosophy, stats, clients, process } from "../mock";
+import { getProjects } from "../api";
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -190,7 +191,7 @@ function ProjectCard({ project, index }) {
   );
 }
 
-function SelectedWork() {
+function SelectedWork({ projects }) {
   return (
     <section className="bg-[#0a0a0b] py-20 sm:py-28">
       <div className="mx-auto max-w-[1500px] px-5 sm:px-8">
@@ -334,12 +335,24 @@ function Process() {
 }
 
 export default function Home() {
-  useReveal();
+  const [projects, setProjects] = useState([]);
+  useReveal([projects]);
+
+  useEffect(() => {
+    let active = true;
+    getProjects()
+      .then((data) => active && setProjects(data))
+      .catch(() => active && setProjects([]));
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <main>
       <Hero />
       <Marquee />
-      <SelectedWork />
+      <SelectedWork projects={projects} />
       <Services />
       <Philosophy />
       <Stats />

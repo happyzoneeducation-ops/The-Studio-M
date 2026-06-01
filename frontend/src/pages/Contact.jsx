@@ -5,6 +5,7 @@ import useReveal from "../hooks/useReveal";
 import { studio, services } from "../mock";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
+import { createEnquiry } from "../api";
 
 export default function Contact() {
   useReveal();
@@ -13,22 +14,23 @@ export default function Contact() {
 
   const update = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
       toast.error("Please fill in your name, email and a short message.");
       return;
     }
     setSubmitting(true);
-    // Mock submission — stored locally for now (frontend-only build)
-    setTimeout(() => {
-      const saved = JSON.parse(localStorage.getItem("sm_enquiries") || "[]");
-      saved.push({ ...form, at: new Date().toISOString() });
-      localStorage.setItem("sm_enquiries", JSON.stringify(saved));
-      setSubmitting(false);
+    try {
+      await createEnquiry(form);
       setForm({ name: "", email: "", company: "", service: "", message: "" });
       toast.success("Thank you — we'll be in touch within 24 hours.");
-    }, 800);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      toast.error(typeof detail === "string" ? detail : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

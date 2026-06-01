@@ -1,14 +1,26 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import useReveal from "../hooks/useReveal";
-import { projects, services } from "../mock";
+import { services } from "../mock";
+import { getProjects } from "../api";
 
 const filters = ["All", ...services.map((s) => s.title)];
 
 export default function Work() {
   const [active, setActive] = useState("All");
-  useReveal([active]);
+  const [projects, setProjects] = useState([]);
+  useReveal([active, projects]);
+
+  useEffect(() => {
+    let on = true;
+    getProjects()
+      .then((d) => on && setProjects(d))
+      .catch(() => on && setProjects([]));
+    return () => {
+      on = false;
+    };
+  }, []);
 
   const list =
     active === "All"
