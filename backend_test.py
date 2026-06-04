@@ -214,14 +214,21 @@ def test_post_enquiries():
             return False
         
         # Check required fields in response
-        required_fields = ['id', 'created_at', 'name', 'email', 'message']
+        required_fields = ['id', 'created_at', 'name', 'email', 'message', 'status']
         missing_fields = [f for f in required_fields if f not in enquiry]
         
         if missing_fields:
             print_test("Enquiry response fields", False, f"Missing fields: {missing_fields}")
             return False
         
-        print_test("Enquiry response fields", True, f"Contains: id, created_at, and echoed fields")
+        print_test("Enquiry response fields", True, f"Contains: id, created_at, status, and echoed fields")
+        
+        # Check status field is "new"
+        if enquiry.get('status') != 'new':
+            print_test("Enquiry status field", False, f"Expected 'new', got '{enquiry.get('status')}'")
+            return False
+        
+        print_test("Enquiry status field", True, "status: 'new'")
         
         # Check echoed fields match
         if enquiry['name'] != valid_payload['name']:
@@ -370,6 +377,341 @@ def test_get_enquiries():
         print_test("GET /api/enquiries request", False, f"Request failed: {e}")
         return False
 
+def test_enquiry_email_status():
+    """Test POST /api/enquiries with email + status field (RESEND_API_KEY empty)"""
+    print(f"{Colors.BLUE}=== Testing POST /api/enquiries (email + status) ==={Colors.END}")
+    
+    try:
+        payload = {
+            "name": "Email Test",
+            "email": "emailtest@example.com",
+            "company": "Co",
+            "service": "Paid Marketing",
+            "message": "testing email path"
+        }
+        
+        response = requests.post(f"{BASE_URL}/enquiries", json=payload, timeout=10)
+        
+        # Must return 200 even though RESEND_API_KEY is empty (email is fire-and-forget)
+        if response.status_code != 200:
+            print_test("POST /api/enquiries (email test) status", False, f"Expected 200, got {response.status_code}\nResponse: {response.text}")
+            return False
+        
+        print_test("POST /api/enquiries (email test) status", True, "Status: 200 (email fire-and-forget, no 500 error)")
+        
+        try:
+            enquiry = response.json()
+        except json.JSONDecodeError as e:
+            print_test("POST /api/enquiries (email test) JSON", False, f"Invalid JSON: {e}")
+            return False
+        
+        # Verify status field = "new"
+        if enquiry.get('status') != 'new':
+            print_test("Enquiry status field", False, f"Expected 'new', got '{enquiry.get('status')}'")
+            return False
+        
+        print_test("Enquiry status field", True, "status: 'new'")
+        
+        # Verify id and created_at are present
+        if 'id' not in enquiry:
+            print_test("Enquiry id field", False, "Missing 'id' field")
+            return False
+        
+        if 'created_at' not in enquiry:
+            print_test("Enquiry created_at field", False, "Missing 'created_at' field")
+            return False
+        
+        print_test("Enquiry id and created_at fields", True, f"id: {enquiry['id']}, created_at: {enquiry['created_at']}")
+        
+        # Store the enquiry id for admin tests
+        global email_test_enquiry_id
+        email_test_enquiry_id = enquiry['id']
+        
+        return True
+        
+    except requests.exceptions.RequestException as e:
+        print_test("POST /api/enquiries (email test) request", False, f"Request failed: {e}")
+        return False
+
+def test_admin_login():
+    """Test POST /api/admin/login - valid and invalid credentials"""
+    print(f"{Colors.BLUE}=== Testing POST /api/admin/login ==={Colors.END}")
+    
+    # Test valid credentials
+    try:
+        valid_payload = {
+            "username": "admin",
+            "password": "admin@2304"
+        }
+        
+        response = requests.post(f"{BASE_URL}/admin/login", json=valid_payload, timeout=10)
+        
+        if response.status_code != 200:
+            print_test("POST /api/admin/login (valid) status", False, f"Expected 200, got {response.status_code}\nResponse: {response.text}")
+            return False
+        
+        print_test("POST /api/admin/login (valid) status", True, "Status: 200")
+        
+        try:
+            result = response.json()
+        except json.JSONDecodeError as e:
+            print_test("POST /api/admin/login (valid) JSON", False, f"Invalid JSON: {e}")
+            return False
+        
+        # Check token field is present
+        if 'token' not in result:
+            print_test("Login response token field", False, "Missing 'token' field")
+            return False
+        
+        if not isinstance(result['token'], str) or len(result['token']) == 0:
+            print_test("Login response token value", False, f"Invalid token: {result['token']}")
+            return False
+        
+        print_test("Login response token field", True, f"token: {result['token'][:20]}...")
+        
+        # Store the token for admin endpoint tests
+        global admin_token
+        admin_token = result['token']
+        
+    except requests.exceptions.RequestException as e:
+        print_test("POST /api/admin/login (valid) request", False, f"Request failed: {e}")
+        return False
+    
+    # Test invalid credentials (wrong password)
+    try:
+        invalid_payload = {
+            "username": "admin",
+            "password": "wrong"
+        }
+        
+        response = requests.post(f"{BASE_URL}/admin/login", json=invalid_payload, timeout=10)
+        
+        if response.status_code != 401:
+            print_test("POST /api/admin/login (invalid) status", False, f"Expected 401, got {response.status_code}")
+            return False
+        
+        print_test("POST /api/admin/login (invalid) status", True, "Status: 401")
+        
+    except requests.exceptions.RequestException as e:
+        print_test("POST /api/admin/login (invalid) request", False, f"Request failed: {e}")
+        return False
+    
+    return True
+
+def test_admin_protected_endpoints():
+    """Test admin protected endpoints - auth checks and functionality"""
+    print(f"{Colors.BLUE}=== Testing Admin Protected Endpoints ==={Colors.END}")
+    
+    if 'admin_token' not in globals():
+        print_test("Admin token available", False, "Admin token not set. Run test_admin_login first.")
+        return False
+    
+    # Test 3a: GET /api/admin/enquiries with NO Authorization header → 401
+    try:
+        response = requests.get(f"{BASE_URL}/admin/enquiries", timeout=10)
+        
+        if response.status_code != 401:
+            print_test("GET /api/admin/enquiries (no auth) status", False, f"Expected 401, got {response.status_code}")
+            return False
+        
+        print_test("GET /api/admin/enquiries (no auth) status", True, "Status: 401")
+        
+    except requests.exceptions.RequestException as e:
+        print_test("GET /api/admin/enquiries (no auth) request", False, f"Request failed: {e}")
+        return False
+    
+    # Test 3b: GET /api/admin/enquiries with wrong token → 401
+    try:
+        headers = {"Authorization": "Bearer wrongtoken"}
+        response = requests.get(f"{BASE_URL}/admin/enquiries", headers=headers, timeout=10)
+        
+        if response.status_code != 401:
+            print_test("GET /api/admin/enquiries (wrong token) status", False, f"Expected 401, got {response.status_code}")
+            return False
+        
+        print_test("GET /api/admin/enquiries (wrong token) status", True, "Status: 401")
+        
+    except requests.exceptions.RequestException as e:
+        print_test("GET /api/admin/enquiries (wrong token) request", False, f"Request failed: {e}")
+        return False
+    
+    # Test 3c: GET /api/admin/enquiries with valid token → 200 array
+    try:
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        response = requests.get(f"{BASE_URL}/admin/enquiries", headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            print_test("GET /api/admin/enquiries (valid token) status", False, f"Expected 200, got {response.status_code}\nResponse: {response.text}")
+            return False
+        
+        print_test("GET /api/admin/enquiries (valid token) status", True, "Status: 200")
+        
+        try:
+            enquiries = response.json()
+        except json.JSONDecodeError as e:
+            print_test("GET /api/admin/enquiries (valid token) JSON", False, f"Invalid JSON: {e}")
+            return False
+        
+        # Check if it's an array
+        if not isinstance(enquiries, list):
+            print_test("GET /api/admin/enquiries returns array", False, f"Expected list, got {type(enquiries)}")
+            return False
+        
+        print_test("GET /api/admin/enquiries returns array", True, f"Array with {len(enquiries)} enquiries")
+        
+        # Check if the enquiry created in step 1 is in the list (newest first)
+        if 'email_test_enquiry_id' in globals():
+            found = False
+            for enq in enquiries:
+                if enq.get('id') == email_test_enquiry_id:
+                    found = True
+                    break
+            
+            if not found:
+                print_test("Email test enquiry in list", False, f"Enquiry with id '{email_test_enquiry_id}' not found")
+                return False
+            
+            print_test("Email test enquiry in list", True, f"Found enquiry with id '{email_test_enquiry_id}' (newest first)")
+        
+    except requests.exceptions.RequestException as e:
+        print_test("GET /api/admin/enquiries (valid token) request", False, f"Request failed: {e}")
+        return False
+    
+    # Test 3d: GET /api/admin/stats with valid token → 200 with {total, new, read}
+    try:
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        response = requests.get(f"{BASE_URL}/admin/stats", headers=headers, timeout=10)
+        
+        if response.status_code != 200:
+            print_test("GET /api/admin/stats (valid token) status", False, f"Expected 200, got {response.status_code}\nResponse: {response.text}")
+            return False
+        
+        print_test("GET /api/admin/stats (valid token) status", True, "Status: 200")
+        
+        try:
+            stats = response.json()
+        except json.JSONDecodeError as e:
+            print_test("GET /api/admin/stats (valid token) JSON", False, f"Invalid JSON: {e}")
+            return False
+        
+        # Check required fields
+        required_fields = ['total', 'new', 'read']
+        missing_fields = [f for f in required_fields if f not in stats]
+        
+        if missing_fields:
+            print_test("GET /api/admin/stats fields", False, f"Missing fields: {missing_fields}")
+            return False
+        
+        # Check all fields are numeric
+        for field in required_fields:
+            if not isinstance(stats[field], (int, float)):
+                print_test("GET /api/admin/stats field types", False, f"Field '{field}' is not numeric: {type(stats[field])}")
+                return False
+        
+        print_test("GET /api/admin/stats fields", True, f"total: {stats['total']}, new: {stats['new']}, read: {stats['read']}")
+        
+    except requests.exceptions.RequestException as e:
+        print_test("GET /api/admin/stats (valid token) request", False, f"Request failed: {e}")
+        return False
+    
+    # Test 3e: PATCH /api/admin/enquiries/{id} with valid token → 200 {ok:true}
+    if 'email_test_enquiry_id' in globals():
+        try:
+            headers = {"Authorization": f"Bearer {admin_token}"}
+            response = requests.patch(f"{BASE_URL}/admin/enquiries/{email_test_enquiry_id}", headers=headers, timeout=10)
+            
+            if response.status_code != 200:
+                print_test("PATCH /api/admin/enquiries/{id} (valid token) status", False, f"Expected 200, got {response.status_code}\nResponse: {response.text}")
+                return False
+            
+            print_test("PATCH /api/admin/enquiries/{id} (valid token) status", True, "Status: 200")
+            
+            try:
+                result = response.json()
+            except json.JSONDecodeError as e:
+                print_test("PATCH /api/admin/enquiries/{id} (valid token) JSON", False, f"Invalid JSON: {e}")
+                return False
+            
+            # Check ok field
+            if result.get('ok') != True:
+                print_test("PATCH /api/admin/enquiries/{id} response", False, f"Expected {{ok: true}}, got {result}")
+                return False
+            
+            print_test("PATCH /api/admin/enquiries/{id} response", True, "ok: true")
+            
+            # Verify status is now "read" by fetching enquiries again
+            response = requests.get(f"{BASE_URL}/admin/enquiries", headers=headers, timeout=10)
+            
+            if response.status_code != 200:
+                print_test("Verify enquiry status updated", False, f"Failed to fetch enquiries: {response.status_code}")
+                return False
+            
+            enquiries = response.json()
+            found = False
+            for enq in enquiries:
+                if enq.get('id') == email_test_enquiry_id:
+                    if enq.get('status') != 'read':
+                        print_test("Verify enquiry status updated", False, f"Expected status 'read', got '{enq.get('status')}'")
+                        return False
+                    found = True
+                    break
+            
+            if not found:
+                print_test("Verify enquiry status updated", False, f"Enquiry with id '{email_test_enquiry_id}' not found")
+                return False
+            
+            print_test("Verify enquiry status updated", True, "status: 'read'")
+            
+        except requests.exceptions.RequestException as e:
+            print_test("PATCH /api/admin/enquiries/{id} (valid token) request", False, f"Request failed: {e}")
+            return False
+    
+    # Test 3f: DELETE /api/admin/enquiries/{id} with valid token → 200 {ok:true}
+    if 'email_test_enquiry_id' in globals():
+        try:
+            headers = {"Authorization": f"Bearer {admin_token}"}
+            response = requests.delete(f"{BASE_URL}/admin/enquiries/{email_test_enquiry_id}", headers=headers, timeout=10)
+            
+            if response.status_code != 200:
+                print_test("DELETE /api/admin/enquiries/{id} (valid token) status", False, f"Expected 200, got {response.status_code}\nResponse: {response.text}")
+                return False
+            
+            print_test("DELETE /api/admin/enquiries/{id} (valid token) status", True, "Status: 200")
+            
+            try:
+                result = response.json()
+            except json.JSONDecodeError as e:
+                print_test("DELETE /api/admin/enquiries/{id} (valid token) JSON", False, f"Invalid JSON: {e}")
+                return False
+            
+            # Check ok field
+            if result.get('ok') != True:
+                print_test("DELETE /api/admin/enquiries/{id} response", False, f"Expected {{ok: true}}, got {result}")
+                return False
+            
+            print_test("DELETE /api/admin/enquiries/{id} response", True, "ok: true")
+            
+        except requests.exceptions.RequestException as e:
+            print_test("DELETE /api/admin/enquiries/{id} (valid token) request", False, f"Request failed: {e}")
+            return False
+    
+    # Test 3g: DELETE /api/admin/enquiries/{id} with non-existent id → 404
+    try:
+        headers = {"Authorization": f"Bearer {admin_token}"}
+        response = requests.delete(f"{BASE_URL}/admin/enquiries/non-existent-id-12345", headers=headers, timeout=10)
+        
+        if response.status_code != 404:
+            print_test("DELETE /api/admin/enquiries/{id} (non-existent) status", False, f"Expected 404, got {response.status_code}")
+            return False
+        
+        print_test("DELETE /api/admin/enquiries/{id} (non-existent) status", True, "Status: 404")
+        
+    except requests.exceptions.RequestException as e:
+        print_test("DELETE /api/admin/enquiries/{id} (non-existent) request", False, f"Request failed: {e}")
+        return False
+    
+    return True
+
 def main():
     print(f"\n{Colors.YELLOW}{'='*60}{Colors.END}")
     print(f"{Colors.YELLOW}THE STUDIO M - Backend API Test Suite{Colors.END}")
@@ -380,7 +722,10 @@ def main():
         "GET /api/projects": test_get_projects(),
         "GET /api/projects/{id}": test_get_project_by_id(),
         "POST /api/enquiries": test_post_enquiries(),
-        "GET /api/enquiries": test_get_enquiries()
+        "GET /api/enquiries": test_get_enquiries(),
+        "POST /api/enquiries (email + status)": test_enquiry_email_status(),
+        "POST /api/admin/login": test_admin_login(),
+        "Admin protected endpoints": test_admin_protected_endpoints()
     }
     
     print(f"\n{Colors.YELLOW}{'='*60}{Colors.END}")
