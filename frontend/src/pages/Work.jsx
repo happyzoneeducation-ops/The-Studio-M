@@ -1,31 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import useReveal from "../hooks/useReveal";
-import { services } from "../mock";
-import { getProjects } from "../api";
+import { services, projects as mockProjects } from "../mock";
 
 const filters = ["All", ...services.map((s) => s.title)];
 
 export default function Work() {
   const [active, setActive] = useState("All");
-  const [projects, setProjects] = useState([]);
+  const [projects] = useState(mockProjects);
   useReveal([active, projects]);
-
-  useEffect(() => {
-    let on = true;
-    getProjects()
-      .then((d) => on && setProjects(d))
-      .catch(() => on && setProjects([]));
-    return () => {
-      on = false;
-    };
-  }, []);
 
   const list =
     active === "All"
       ? projects
-      : projects.filter((p) => p.services.includes(active));
+      : projects.filter((p) => Array.isArray(p.services) && p.services.includes(active));
 
   return (
     <main className="bg-[#0a0a0b] min-h-screen">
