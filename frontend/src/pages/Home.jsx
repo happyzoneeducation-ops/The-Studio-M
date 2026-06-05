@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, ArrowDown } from "lucide-react";
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from "framer-motion";
 import useReveal from "../hooks/useReveal";
-import { services, philosophy, stats, clients, process } from "../mock";
-import { getProjects } from "../api";
+import { services, philosophy, stats, clients, process, projects as mockProjects } from "../mock";
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -40,7 +39,6 @@ function Hero() {
 
   return (
     <section ref={ref} onMouseMove={onMove} className="relative min-h-screen overflow-hidden bg-[#07060c]">
-      {/* Animated liquid background */}
       <motion.div style={{ scale: scaleBg }} className="absolute inset-0">
         <div className="sm-liquid">
           <div className="sm-blob sm-blob-a" />
@@ -52,13 +50,11 @@ function Hero() {
         <div className="absolute inset-0 sm-grain opacity-60" />
       </motion.div>
 
-      {/* Mouse-reactive sheen */}
       <motion.div
         className="pointer-events-none absolute w-[36vw] h-[36vw] rounded-full bg-white/10 blur-[120px] mix-blend-screen"
         style={{ left: useTransform(sx, (v) => `${v}%`), top: useTransform(sy, (v) => `${v}%`), x: "-50%", y: "-50%" }}
       />
 
-      {/* Centered hero content */}
       <motion.div
         style={{ y: yText, opacity }}
         className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-5"
@@ -204,13 +200,11 @@ function SelectedWork({ projects }) {
             <ArrowUpRight size={16} />
           </Link>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {projects.slice(0, 5).map((p, i) => (
             <ProjectCard key={p.id} project={p} index={i} />
           ))}
         </div>
-
         <div className="mt-12 flex justify-center">
           <Link
             to="/work"
@@ -237,7 +231,6 @@ function Services() {
             Full-service marketing, crafted for brands that refuse to blend in.
           </h2>
         </div>
-
         <div className="border-t border-black/10">
           {services.map((s) => (
             <div
@@ -268,7 +261,7 @@ function Philosophy() {
         </p>
         <div className="reveal">
           <h2 className="font-display font-extrabold text-white leading-[0.9] tracking-tight text-[15vw] sm:text-[11vw] lg:text-[8.5vw]">
-            {philosophy.heading.map((w, i) => (
+            {Array.isArray(philosophy.heading) && philosophy.heading.map((w, i) => (
               <span key={i} className={i % 2 === 1 ? "text-white/25" : ""}>
                 {w}{" "}
               </span>
@@ -335,18 +328,8 @@ function Process() {
 }
 
 export default function Home() {
-  const [projects, setProjects] = useState([]);
+  const [projects] = useState(mockProjects);
   useReveal([projects]);
-
-  useEffect(() => {
-    let active = true;
-    getProjects()
-      .then((data) => active && setProjects(data))
-      .catch(() => active && setProjects([]));
-    return () => {
-      active = false;
-    };
-  }, []);
 
   return (
     <main>
