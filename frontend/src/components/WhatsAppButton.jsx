@@ -1,12 +1,7 @@
 import React from "react";
-import { studio } from "../mock";
 
 export default function WhatsAppButton() {
-  const number = (studio.phoneRaw || "").replace(/[^0-9]/g, "");
-  const text = encodeURIComponent(
-    "Hi THE STUDIO M, I'd like to discuss a project."
-  );
-  const href = `https://wa.me/${number}?text=${text}`;
+  const href = "https://wa.me/919582712119?text=Hi%20I%20want%20to%20know%20more";
 
   return (
     <a
