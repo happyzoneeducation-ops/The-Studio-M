@@ -1,36 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
 import useReveal from "../hooks/useReveal";
-import { getProjects } from "../api";
+import { projects as mockProjects } from "../mock";
 
 export default function CaseStudyDetail() {
   const { id } = useParams();
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [projects] = useState(mockProjects);
   useReveal([id, projects]);
-
-  useEffect(() => {
-    let on = true;
-    getProjects()
-      .then((d) => on && setProjects(d))
-      .catch(() => on && setProjects([]))
-      .finally(() => on && setLoading(false));
-    return () => {
-      on = false;
-    };
-  }, []);
 
   const idx = projects.findIndex((p) => p.id === id);
   const project = projects[idx];
-
-  if (loading) {
-    return (
-      <main className="bg-[#0a0a0b] min-h-screen flex items-center justify-center">
-        <span className="text-white/40 text-sm tracking-[0.3em] uppercase animate-pulse">Loading…</span>
-      </main>
-    );
-  }
 
   if (!project) {
     return (
@@ -77,7 +57,7 @@ export default function CaseStudyDetail() {
           <div className="lg:col-span-4">
             <p className="text-[11px] tracking-[0.3em] uppercase text-white/40 mb-4">Services</p>
             <ul className="space-y-2">
-              {project.services.map((s) => (
+              {Array.isArray(project.services) && project.services.map((s) => (
                 <li key={s} className="font-display text-lg text-white border-b border-white/10 pb-2">
                   {s}
                 </li>
@@ -95,7 +75,7 @@ export default function CaseStudyDetail() {
 
       <section className="pb-16">
         <div className="mx-auto max-w-[1500px] px-5 sm:px-8 grid grid-cols-1 sm:grid-cols-3 gap-6 border-y border-white/10 py-12">
-          {project.results.map((r) => (
+          {Array.isArray(project.results) && project.results.map((r) => (
             <div key={r.label} className="reveal">
               <p className="font-display text-5xl sm:text-6xl font-extrabold text-[var(--sm-purple-soft)] leading-none">
                 {r.value}
@@ -108,7 +88,7 @@ export default function CaseStudyDetail() {
 
       <section className="pb-24">
         <div className="mx-auto max-w-[1500px] px-5 sm:px-8 flex flex-col gap-6">
-          {project.gallery.map((g, i) => (
+          {Array.isArray(project.gallery) && project.gallery.map((g, i) => (
             <div key={i} className="reveal overflow-hidden rounded-2xl">
               <img src={g} alt={`${project.title} ${i + 1}`} loading="lazy" className="w-full object-cover" />
             </div>
@@ -116,19 +96,21 @@ export default function CaseStudyDetail() {
         </div>
       </section>
 
-      <section className="border-t border-white/10">
-        <Link to={`/work/${next.id}`} className="group block py-16 sm:py-24">
-          <div className="mx-auto max-w-[1500px] px-5 sm:px-8 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] tracking-[0.3em] uppercase text-white/40 mb-3">Next project</p>
-              <h2 className="font-display text-[10vw] sm:text-[6vw] font-extrabold text-white group-hover:text-[var(--sm-purple-soft)] transition-colors">
-                {next.title}
-              </h2>
+      {next && (
+        <section className="border-t border-white/10">
+          <Link to={`/work/${next.id}`} className="group block py-16 sm:py-24">
+            <div className="mx-auto max-w-[1500px] px-5 sm:px-8 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] tracking-[0.3em] uppercase text-white/40 mb-3">Next project</p>
+                <h2 className="font-display text-[10vw] sm:text-[6vw] font-extrabold text-white group-hover:text-[var(--sm-purple-soft)] transition-colors">
+                  {next.title}
+                </h2>
+              </div>
+              <ArrowUpRight size={56} className="text-white/30 group-hover:text-[var(--sm-purple-soft)] group-hover:translate-x-2 group-hover:-translate-y-2 transition-all shrink-0" />
             </div>
-            <ArrowUpRight size={56} className="text-white/30 group-hover:text-[var(--sm-purple-soft)] group-hover:translate-x-2 group-hover:-translate-y-2 transition-all shrink-0" />
-          </div>
-        </Link>
-      </section>
+          </Link>
+        </section>
+      )}
     </main>
   );
 }
