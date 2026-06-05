@@ -143,7 +143,7 @@ async def root():
 
 @api_router.get("/projects", response_model=List[Project])
 async def get_projects():
-    docs = await db.projects.find({}, {"_id": 0}).sort("order", 1).to_list(1000)
+    docs = await db.projects.find({}, {"_id": 0}).sort("order", 1).limit(200).to_list(200)
     return [Project(**d) for d in docs]
 
 
@@ -176,7 +176,7 @@ async def admin_login(payload: LoginRequest):
 
 @api_router.get("/admin/enquiries", response_model=List[Enquiry])
 async def admin_list_enquiries(_: bool = Depends(require_admin)):
-    docs = await db.enquiries.find({}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    docs = await db.enquiries.find({}, {"_id": 0}).sort("created_at", -1).limit(500).to_list(500)
     return [Enquiry(**d) for d in docs]
 
 
